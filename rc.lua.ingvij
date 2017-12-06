@@ -190,7 +190,7 @@ volumewidget = lain.widget.alsa({
         vlevel  = volume_now.level
 
         if volume_now.status == "off" then
-          vlevel = markup(beautiful.yellow, level .. "M ")
+          vlevel = markup(beautiful.yellow, vlevel .. "M ")
         else
             vlevel = markup(beautiful.teal, vlevel .. " ")
         end
