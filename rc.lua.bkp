@@ -13,7 +13,10 @@ local wibox        = require("wibox")
 local beautiful    = require("beautiful")
 local naughty      = require("naughty")
 local lain         = require("lain")
-local tyrannical   = require("tyrannical")
+local freedesktop  = require("freedesktop")
+local menubar      = require("menubar")
+local custom       = require("widgets")
+local spotify      = require("widgets.spotify")
 -- }}}
 
 math.randomseed(os.time())
@@ -70,8 +73,9 @@ end
 
 -- }}}
 
---helper.run_once(os.getenv("HOME") .. "/.init.sh")
+helper.run_once(os.getenv("HOME") .. "/.init.sh")
 helper.run_once("unclutter")
+helper.run_once("numlockx")
 
 -- {{{ Variable definitions
 
@@ -250,116 +254,18 @@ end
 screen.connect_signal("property::geometry", helper.set_wallpaper)
 -- }}}
 
--- Tyrannical config
--- {{{
-multi_screen = function(min, multi, single)
-  if screen.count() >= min then
-    return multi
-  else
-    return single
-  end
-end
-
-range = function(b, e)
-  if b == nil then return end
-
-  local t = {}
-  for v = b,e do
-    table.insert(t, v)
-  end
-  return t
-end
-
-tyrannical.tags = {
-    {
-        name        = "code",
-        init        = true,
-        exclusive   = true,
-        screen      = multi_screen(2, {screen.count()}, {1, }),
-        layout      = awful.layout.suit.tile,
-        class       = { "nvim-qt", "oni" }
-    } ,
-    {
-        name        = "term",                 -- Call the tag "Term"
-        init        = true,                   -- Load the tag on startup
-        exclusive   = true,                   -- Refuse any other type of clients (by classes)
-        screen      = multi_screen(2, range(2, screen.count()), {1, }),
-        layout      = awful.layout.suit.fair, -- Use the tile layout
-        instance    = {"dev", "ops"},         -- Accept the following instances. This takes precedence over 'class'
-        class       = { "Alacritty", "termite" }
-    } ,
-    {
-        name        = "web",
-        init        = true,
-        exclusive   = true,
-        fullscreen  = false,
-        screen      = {1, },
-        layout      = awful.layout.suit.max,      -- Use the max layout
-        class = { "Firefox", "Arora", "Chromium", "nightly" }
-    } ,
-    {
-        name        = "music",
-        init        = true,
-        exclusive   = true,
-        screen      = {1, },
-        layout      = awful.layout.suit.max,      -- Use the max layout
-        instance = { "Spotify", "spotify" },
-        class = { "Spotify", "spotify" }
-    } ,
-    {
-        name        = "docs",
-        init        = false, -- This tag wont be created at startup, but will be when one of the
-                             -- client in the "class" section will start. It will be created on
-                             -- the client startup screen
-        exclusive   = true,
-        layout      = awful.layout.suit.max,
-        class       = {
-            "Assistant"     , "Okular"         , "Evince"    , "EPDFviewer"   , "xpdf",
-            "Xpdf"          ,                                        }
-    } ,
-    {
-        name        = "other",
-        init        = false,
-        exclusive   = false,
-        fallback    = true,
-        screen      = range(1, screen.count()),
-        layout      = awful.layout.suit.tile,
-    } ,
-}
-
--- Ignore the tag "exclusive" property for the following clients (matched by classes)
-tyrannical.properties.intrusive = {
-    "ksnapshot"     , "pinentry"       , "gtksu"     , "kcalc"        , "xcalc"               ,
-    "feh"           , "Gradient editor", "About KDE" , "Paste Special", "Background color"    ,
-    "kcolorchooser" , "plasmoidviewer" , "Xephyr"    , "kruler"       , "plasmaengineexplorer",
-}
-
--- Ignore the tiled layout for the matching clients
---tyrannical.properties.floating = {
-    --"MPlayer"      , "pinentry"        , "ksnapshot"  , "pinentry"     , "gtksu"          ,
-    --"xine"         , "feh"             , "kmix"       , "kcalc"        , "xcalc"          ,
-    --"yakuake"      , "Select Color$"   , "kruler"     , "kcolorchooser", "Paste Special"  ,
-    --"New Form"     , "Insert Picture"  , "kcharselect", "mythfrontend" , "plasmoidviewer"
---}
-
--- Make the matching clients (by classes) on top of the default layout
-tyrannical.properties.ontop = {
-    "Xephyr"       , "ksnapshot"       , "kruler"
-}
-
--- Force the matching clients (by classes) to be centered on the screen on init
-tyrannical.properties.placement = {
-    kcalc = awful.placement.centered
-}
-
-tyrannical.settings.block_children_focus_stealing = true --Block popups ()
-tyrannical.settings.group_children = true --Force popups/dialogs to have the same tags as the parent client
--- }}}
 
 awful.screen.connect_for_each_screen(function(s)
 
   helper.set_wallpaper(s)
   s.promptbox = awful.widget.prompt()
+
+  if screen.count() == 1 then
+    awful.tag({ "code", "web", "music", "other" }, s, awful.layout.layouts[1])
+  else
+    y = math.min(s.index, #tag_options)
+    awful.tag(tag_options[y], s, awful.layout.layouts[1])
+  end
 
     -- Create a textbox widget which will contains a short string representing the
     -- layout we're using.  We need one layoutbox per screen.
@@ -541,8 +447,8 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey }, "v", function () os.execute("xsel -b -d") end),
 
     -- User programs
-    awful.key({ modkey }, "q", function () awful.spawn(browser) end),
-    awful.key({ modkey }, "s", function () awful.spawn(spotify) end),
+    awful.key({ modkey }, "q", function () awful.spawn(browser, {screen = screen.count() > 1 and 2 or 1, tag = "web"}) end),
+    awful.key({ modkey }, "s", function () awful.spawn(spotify, {screen = screen.count() > 1 and 2 or 1, tag = "music"}) end),
 
     -- Prompt
     awful.key({ modkey }, "r", function () awful.screen.focused().promptbox:run() end),
@@ -551,6 +457,19 @@ globalkeys = awful.util.table.join(
       textbox      = awful.screen.focused().promptbox.widget,
       exe_callback = awful.util.eval,
       history_eval = awful.util.getdir("cache") .. "/history_eval"
+    } end ),
+
+    -- Lastpass
+    awful.key({ modkey }, "p", function () awful.prompt.run {
+      prompt       = "Last Pass: ",
+      textbox      = awful.screen.focused().promptbox.widget,
+      exe_callback = function(k) os.execute("lpass show -c --password " .. k) end
+    } end ),
+    awful.key({ modkey, "Shift" }, "Escape", function () os.execute("lpass logout -f") end),
+    awful.key({ modkey          }, "Escape", function () awful.prompt.run {
+      prompt       = "Last Pass User: ",
+      textbox      = awful.screen.focused().promptbox.widget,
+      exe_callback = function(k) awful.spawn("lpass login " .. k) end
     } end )
 )
 
@@ -616,6 +535,25 @@ awful.rules.rules = {
                      buttons = clientbuttons,
                      size_hints_honor = false } },
 
+    { rule       = { class = "nvim-qt" },
+      properties = { screen               = 3,
+                     tag                  = "code",
+                     maximized_vertical   = true,
+                     maximized_horizontal = true,
+                     floating             = false } },
+
+    { rule       = { class = "Firefox" },
+      properties = { tag                  = "web",
+                     maximized_vertical   = true,
+                     maximized_horizontal = true,
+                     screen               = 1,
+                     floating             = false } },
+
+    { rule       = { class = "Spotify" },
+      properties = { tag                  = "music",
+                     maximized_vertical   = true,
+                     maximized_horizontal = true,
+                     floating             = false } },
 }
 -- }}}
 
