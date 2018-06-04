@@ -87,7 +87,8 @@ altkey     = "Mod1"
 terminal   = "alacritty"
 editor     = os.getenv("EDITOR") or "nvim"
 editor_cmd = terminal .. " -e " .. editor
-gui_editor = "nvim-qt"
+gui_editor = "oni"
+--gui_editor = "nvim-qt"
 file_nav   = terminal .. " -e ranger"
 
 -- user defined
@@ -249,7 +250,7 @@ screen.connect_signal("property::geometry", helper.set_wallpaper)
 
 -- Tyrannical config
 -- {{{
-multi_screen = function(min, multi, single)
+local multi_screen = function(min, multi, single)
   if screen.count() >= min then
     return multi
   else
@@ -277,13 +278,22 @@ tyrannical.tags = {
         class       = { "nvim-qt", "oni" }
     } ,
     {
+        name        = "meta",
+        init        = false,
+        exclusive   = true,
+        screen      = {1, },
+        layout      = awful.layout.suit.tile,
+        class       = { "emacs" }
+    } ,
+
+    {
         name        = "term",                 -- Call the tag "Term"
         init        = true,                   -- Load the tag on startup
         exclusive   = true,                   -- Refuse any other type of clients (by classes)
         screen      = multi_screen(2, range(2, screen.count()), {1, }),
-        layout      = awful.layout.suit.fair, -- Use the tile layout
+        layout      = awful.layout.suit.fair.horizontal, -- Use the tile layout
         instance    = {"dev", "ops"},         -- Accept the following instances. This takes precedence over 'class'
-        class       = { "Alacritty", "termite" }
+        class       = { "Alacritty", "termite", "kitty" }
     } ,
     {
         name        = "web",

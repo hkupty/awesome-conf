@@ -36,13 +36,13 @@ theme.fg_urgent                     = theme.full_black
 theme.useless_gap                   = 1
 theme.border_width                  = 1
 theme.border_normal                 = theme.dark_gray
-theme.border_focus                  = theme.purple
+theme.border_focus                  = theme.green
 theme.border_marked                 = theme.blue
 
 theme.taglist_fg_focus              = theme.blue
 
 theme.tasklist_bg_focus             = theme.dark_gray
-theme.tasklist_fg_focus             = theme.purple
+theme.tasklist_fg_focus             = theme.green
 
 theme.menu_height                   = "16"
 theme.menu_width                    = "140"
